@@ -14,10 +14,20 @@ const multer = require("multer");
 const fs = require("fs");
 const order = require("./database/order");
 const nodemailer = require("nodemailer");
+require('dotenv').config({ path: __dirname + '/details.env' });
+
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+    cloud_name:"dhgnqr8tz",
+    api_key:process.env.File_KEY,
+    api_secret:process.env.File_SECRET,
+})
+
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 console.log(__dirname,'uploads');
-require('dotenv').config({ path: __dirname + '/details.env' });
+
 
 
 const transporter = nodemailer.createTransport({
@@ -56,6 +66,15 @@ try{
     res.send("Error aa gay bhai")
 }
     
+// const storage = multer.diskStorage({
+//     destination:function(req,file,cb){
+//         cb(null,`./${folderPath}`);
+//     },
+//     filename:function(req,file,cb){
+//         cb(null,`${Date.now()}-${file.originalname}`);
+//     }
+// })
+// const upload = multer({storage:storage});
 const storage = multer.diskStorage({
     destination:function(req,file,cb){
         cb(null,`./${folderPath}`);
@@ -65,6 +84,8 @@ const storage = multer.diskStorage({
     }
 })
 const upload = multer({storage:storage});
+
+
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -104,8 +125,17 @@ app.get("/printout/:username/:userid",async function(req,res){
 }
 })
 app.post("/printout/:userid",upload.single("printout"),async function(req,res,next){
+
     if(!req.cookies.reload){
+        
         try{
+            const file = req.file.path;
+        const cloudinaryResponce = await cloudinary.uploader.upload(file,{
+            
+            folder:"Uploads"
+        })
+        console.log("cloudinary respnce",cloudinaryResponce);
+            console.log(req.file)
             let user = await customerDataBase.findOne({_id:req.params.userid});
             let tokenNumber = (Math.random()*1000000).toFixed(0);
             await printoutDataBase.create({
@@ -114,7 +144,7 @@ app.post("/printout/:userid",upload.single("printout"),async function(req,res,ne
                 userid:user._id,
                 tokenNumber:tokenNumber,
                 status:false,
-                pdf:req.file.path,
+                pdf:cloudinaryResponce.url,
             })
            res.cookie("reload","Reload");
             res.render("token",{tokenNumber:tokenNumber})
