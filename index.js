@@ -53,19 +53,7 @@ transporter.sendMail({
 
 
  
-try{
-    var today = new Date();
-    var folderName = today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    var folderPath = path.join(__dirname, 'uploads', folderName);
-    console.log(`Folder created: ${folderPath}`);
 
-    if (!fs.existsSync(folderPath)) {
-        fs.mkdirSync(folderPath);
-    }
-}catch(e){
-    res.send("Error aa gay bhai")
-}
-    
 // const storage = multer.diskStorage({
 //     destination:function(req,file,cb){
 //         cb(null,`./${folderPath}`);
@@ -76,9 +64,7 @@ try{
 // })
 // const upload = multer({storage:storage});
 const storage = multer.diskStorage({
-    destination:function(req,file,cb){
-        cb(null,`./${folderPath}`);
-    },
+    
     filename:function(req,file,cb){
         cb(null,`${Date.now()}-${file.originalname}`);
     }
@@ -100,36 +86,39 @@ app.get("/printout",async function(req,res){
     try{
         let data = jwt.verify(req.cookies.token,process.env.pin);
     let user = await customerDataBase.findOne({mobileNumber:data.mobileNumber});
-    res.redirect(`/printout/${user.email}/${user._id}`);
+    res.render("printout",{user:user})
     }catch(e){
         res.redirect("/login")
     }
 })
-app.get("/printout/:username/:userid",async function(req,res){
-    try{
-        let data = jwt.verify(req.cookies.token,process.env.pin);
+// app.get("/printout/:username/:userid",async function(req,res){
+//     try{
+//         let data = jwt.verify(req.cookies.token,process.env.pin);
     
    
-    let user = await customerDataBase.findOne({mobileNumber:data.mobileNumber});
-    try{
-        if (!fs.existsSync(folderPath)) {
-            fs.mkdirSync(folderPath);
-        }
-    }catch(e){
-        res.render("errorPage")
-    }
+//     let user = await customerDataBase.findOne({mobileNumber:data.mobileNumber});
+//     try{
+//         if (!fs.existsSync(folderPath)) {
+//             fs.mkdirSync(folderPath);
+//         }
+//     }catch(e){
+//         res.render("errorPage")
+//     }
 
-    res.render("printout",{user:user});
-}catch(e){
-    res.redirect("/login")
-}
-})
+//     res.render("printout",{user:user});
+// }catch(e){
+//     res.redirect("/login")
+// }
+// })
 app.post("/printout/:userid",upload.single("printout"),async function(req,res,next){
 
     if(!req.cookies.reload){
         
         try{
+            console.log("file data ",req.file)
+
             const file = req.file.path;
+            console.log("Path of file is ",file);
         const cloudinaryResponce = await cloudinary.uploader.upload(file,{
             
             folder:"Uploads"
